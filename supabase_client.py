@@ -13,17 +13,16 @@ def login_email(email, password):
             "email": email,
             "password": password
         })
-        return res.user  # retorna None se falhar
+        return res.user
     except Exception as e:
         print("Erro no login:", e)
         return None
 
 
 # ================= PROFILE =================
-def get_profile(user_id):
+def get_or_create_profile(user_id, email):
     """
-    Obtém perfil do usuário sem usar .single() (evita erro PGRST116).
-    Se não existir, cria automaticamente um perfil padrão.
+    Retorna o profile, criando automaticamente se não existir.
     """
     try:
         res = (
@@ -34,13 +33,16 @@ def get_profile(user_id):
             .execute()
         )
 
-        # Se o usuário não tiver perfil → cria um
+        # Se não existe → cria
         if not res.data:
             new_profile = {
                 "id": user_id,
-                "role": "barber",   # padrão
-                "name": "Barbeiro"
+                "email": email,
+                "name": "",
+                "phone": "",
+                "role": "barber"  # padrão
             }
+
             supabase.table("profiles").insert(new_profile).execute()
             return new_profile
 
@@ -69,7 +71,6 @@ def listar_clientes():
 
 
 def criar_cliente(nome, telefone=None):
-    """Cria cliente com ID automático."""
     try:
         novo_cliente = {
             "role": "client",
@@ -112,11 +113,6 @@ def criar_servico(barbeiro_id, nome, preco, duracao):
 
 # ================= AGENDA =================
 def listar_agendamentos(barbeiro_id):
-    """
-    Inclui:
-    - dados do cliente (profiles)
-    - dados do serviço (services)
-    """
     try:
         res = (
             supabase
