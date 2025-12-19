@@ -1,41 +1,34 @@
 import streamlit as st
-from streamlit_extras.switch_page_button import switch_page
-from supabase_api import login_email, login_social
-from utils import save_user_session, load_profile
+from supabase_client import login_email, get_or_create_profile
 
-st.set_page_config(page_title="Login | Agendei Barber", layout="centered")
+st.set_page_config(page_title="Login 💈")
 
-st.title("🔐 Login")
+st.title("Entrar")
 
-role = st.session_state.get("role_choice", None)
-if not role:
+# Se veio sem escolha → mandar voltar
+if "role_choice" not in st.session_state:
     st.warning("Escolha primeiro se você é Cliente ou Barbeiro.")
-    switch_page("Home")
+    st.switch_page("start")
     st.stop()
+
+selected_role = st.session_state["role_choice"]
 
 email = st.text_input("Email")
 password = st.text_input("Senha", type="password")
 
 if st.button("Entrar"):
     user = login_email(email, password)
-    
-    if user:
-        save_user_session(user)
-        
-        # Carrega ou cria profile
-        profile = load_profile()
 
-        # Se for cliente -> dashboard cliente
-        if profile["role"] == "client":
-            switch_page("dashboard_client")
+    if not user:
+        st.error("Credenciais inválidas")
+        st.stop()
 
-        # Se for barbeiro -> dashboard barbeiro
-        else:
-            switch_page("dashboard_barber")
+    profile = get_or_create_profile(user.id, email, default_role=selected_role)
+
+    st.session_state["user"] = user
+    st.session_state["role"] = profile["role"]
+
+    if selected_role == "barber":
+        st.switch_page("pages/dashboard_barber.py")
     else:
-        st.error("Email ou senha incorretos.")
-
-st.divider()
-st.write("Ou entre com:")
-if st.button("Entrar com Google"):
-    login_social("google")
+        st.switch_page("pages/dashboard_client.py")
