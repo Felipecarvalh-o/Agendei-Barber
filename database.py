@@ -25,7 +25,7 @@ def login_email(email, password):
 
 
 def login_social(provider):
-    """Login com Google / Apple"""
+    """Login OAuth (Google / Apple)"""
     try:
         res = supabase.auth.sign_in_with_oauth({
             "provider": provider,
@@ -44,8 +44,9 @@ def login_social(provider):
 def get_or_create_profile(user_id, email, default_role="client"):
     """
     Retorna SEMPRE um profile válido.
-    Se não existir → cria.
+    Se não existir → cria automaticamente.
     """
+
     try:
         res = (
             supabase
@@ -55,7 +56,7 @@ def get_or_create_profile(user_id, email, default_role="client"):
             .execute()
         )
 
-        # SE JÁ EXISTE
+        # SE O PERFIL EXISTE
         if res.data:
             return res.data[0]
 
@@ -65,7 +66,7 @@ def get_or_create_profile(user_id, email, default_role="client"):
             "email": email,
             "name": "",
             "phone": "",
-            "role": default_role,
+            "role": default_role,        # barber ou client → vem do start.py
             "barbershop_name": None
         }
 
@@ -74,13 +75,15 @@ def get_or_create_profile(user_id, email, default_role="client"):
         return insert_res.data[0] if insert_res.data else new_profile
 
     except Exception as e:
-        print("Erro ao buscar/criar profile:", e)
+        print("Erro ao buscar ou criar profile:", e)
+
         return {
             "id": user_id,
             "email": email,
             "name": "",
             "phone": "",
-            "role": default_role
+            "role": default_role,
+            "barbershop_name": None
         }
 
 
@@ -89,12 +92,14 @@ def get_or_create_profile(user_id, email, default_role="client"):
 # ============================================================
 
 def listar_clientes():
+    """Lista todos os clientes cadastrados"""
     try:
         res = (
-            supabase.table("profiles")
+            supabase
+            .table("profiles")
             .select("*")
             .eq("role", "client")
-            .order("name", desc=False)
+            .order("name")
             .execute()
         )
         return res.data or []
@@ -104,6 +109,7 @@ def listar_clientes():
 
 
 def criar_cliente(nome, telefone=None):
+    """Criação manual de cliente"""
     try:
         novo = {
             "id": str(uuid.uuid4()),
@@ -112,6 +118,7 @@ def criar_cliente(nome, telefone=None):
             "phone": telefone
         }
         supabase.table("profiles").insert(novo).execute()
+
     except Exception as e:
         print("Erro criar cliente:", e)
 
@@ -140,12 +147,13 @@ def criar_servico(barbeiro_id, nome, preco, duracao):
     try:
         novo = {
             "id": str(uuid.uuid4()),
-            "barber_id": barbeiro_id,
+            "barber_id": barber_id,
             "name": nome,
             "price": preco,
             "duration_minutes": duracao
         }
         supabase.table("services").insert(novo).execute()
+
     except Exception as e:
         print("Erro criar serviço:", e)
 
@@ -155,9 +163,11 @@ def criar_servico(barbeiro_id, nome, preco, duracao):
 # ============================================================
 
 def listar_agendamentos(barbeiro_id):
+    """Retorna agendamentos + JOIN cliente e serviço"""
     try:
         res = (
-            supabase.table("appointments")
+            supabase
+            .table("appointments")
             .select("""
                 *,
                 client:profiles(name, phone),
@@ -169,7 +179,7 @@ def listar_agendamentos(barbeiro_id):
         )
         return res.data or []
     except Exception as e:
-        print("Erro listar agenda:", e)
+        print("Erro listar agendamentos:", e)
         return []
 
 
@@ -177,12 +187,14 @@ def criar_agendamento(barbeiro_id, client_id, service_id, data_hora):
     try:
         novo = {
             "id": str(uuid.uuid4()),
-            "barber_id": barbeiro_id,
+            "barber_id": barber_id,
             "client_id": client_id,
             "service_id": service_id,
             "appointment_time": data_hora
         }
+
         supabase.table("appointments").insert(novo).execute()
+
     except Exception as e:
         print("Erro criar agendamento:", e)
 
@@ -199,6 +211,7 @@ def criar_lembrete(appointment_id, canal="whatsapp"):
             "channel": canal
         }
         supabase.table("reminders").insert(novo).execute()
+
     except Exception as e:
         print("Erro criar lembrete:", e)
 
