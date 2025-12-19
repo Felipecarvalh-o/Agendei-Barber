@@ -1,43 +1,33 @@
 import streamlit as st
+from database import listar_agendamentos, criar_lembrete
 
-if "user" not in st.session_state:
-    st.switch_page("pages/Login.py")
+st.title("Lembretes WhatsApp 💬")
 
-user = st.session_state["user"]
+# Segurança — só barbeiro acessa
+if st.session_state.get("role") != "barber":
+    st.error("Acesso negado. Área exclusiva para barbeiros.")
+    st.stop()
 
-import streamlit as st
+user = st.session_state.get("user")
 
-if "user" not in st.session_state:
-    st.switch_page("pages/Login.py")
+if not user:
+    st.error("Erro: usuário não autenticado.")
+    st.stop()
 
-from supabase_client import listar_agendamentos, listar_clientes
-from datetime import date
-import urllib.parse
+# Listar agendamentos
+agendamentos = listar_agendamentos(user.id)
 
-def load_css():
-    with open("styles.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+if not agendamentos:
+    st.info("Nenhum agendamento encontrado.")
+    st.stop()
 
-load_css()
+for ag in agendamentos:
+    cliente = ag.get("client", {})
+    servico = ag.get("service", {})
+    dt = ag.get("appointment_time")
 
-st.markdown("<div class='title'>Lembretes WhatsApp 💬</div>", unsafe_allow_html=True)
+    st.write(f"📌 **{cliente.get('name')}** — {servico.get('name')} — {dt}")
 
-hoje = str(date.today())
-agendamentos = listar_agendamentos()
-clientes = {c["id"]: c for c in listar_clientes()}
-
-for a in agendamentos:
-    if a["appointment_date"] == hoje:
-        cliente = clientes.get(a["client_id"])
-        if not cliente:
-            continue
-
-        msg = f"Olá {cliente['name']} 👋\nSeu horário hoje às {a['appointment_time']} está confirmado 💈"
-        link = f"https://wa.me/55{cliente['phone']}?text={urllib.parse.quote(msg)}"
-
-        st.markdown(f"""
-        <div class='card'>
-            <p><strong>{cliente['name']}</strong></p>
-            <a href="{link}" target="_blank">📲 Enviar lembrete</a>
-        </div>
-        """, unsafe_allow_html=True)
+    if st.button(f"Enviar lembrete para {cliente.get('name')}", key=ag["id"]):
+        criar_lembrete(ag["id"])
+        st.success("Lembrete registrado!")
