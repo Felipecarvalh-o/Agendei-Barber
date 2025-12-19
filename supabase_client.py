@@ -1,4 +1,5 @@
 from supabase import create_client
+import uuid
 
 # ================= CONFIG =================
 SUPABASE_URL = "https://xclixjztgjlbwndrumed.supabase.co"
@@ -6,9 +7,12 @@ SUPABASE_KEY = "sb_publishable_dYoF_Sr-yBc8dyxZofXCaA_fjOofLaQ"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ============================================================
+# ======================= AUTH ===============================
+# ============================================================
 
-# ================= AUTH =================
 def login_email(email, password):
+    """Login tradicional por email/senha"""
     try:
         res = supabase.auth.sign_in_with_password({
             "email": email,
@@ -16,18 +20,33 @@ def login_email(email, password):
         })
         return res.user
     except Exception as e:
-        print("Erro no login:", e)
+        print("Erro login:", e)
         return None
 
 
-# ================= PROFILE =================
-def get_or_create_profile(user_id, email):
+def login_social(provider):
+    """Login com Google / Apple"""
+    try:
+        res = supabase.auth.sign_in_with_oauth({
+            "provider": provider,
+            "options": {"redirect_to": "http://localhost:8501"}
+        })
+        return res.url
+    except Exception as e:
+        print("Erro login social:", e)
+        return None
+
+
+# ============================================================
+# ===================== PERFIS ===============================
+# ============================================================
+
+def get_or_create_profile(user_id, email, default_role="client"):
     """
-    Garante que SEMPRE retorna um profile válido.
-    Nunca retorna None.
+    Retorna SEMPRE um profile válido.
+    Se não existir → cria.
     """
     try:
-        # Buscar perfil
         res = (
             supabase
             .table("profiles")
@@ -36,67 +55,76 @@ def get_or_create_profile(user_id, email):
             .execute()
         )
 
-        # Já existe
+        # EXISTE
         if res.data:
             return res.data[0]
 
-        # Criar perfil novo
+        # NÃO EXISTE → CRIAR
         new_profile = {
             "id": user_id,
             "email": email,
             "name": "",
             "phone": "",
-            "role": "barber"
+            "role": default_role,
+            "barbershop_name": None,
+            "created_at": None
         }
 
         insert_res = supabase.table("profiles").insert(new_profile).execute()
 
-        # Garantir retorno mesmo sem data (às vezes supabase não retorna)
         return insert_res.data[0] if insert_res.data else new_profile
 
     except Exception as e:
-        print("Erro ao buscar ou criar profile:", e)
-
-        # Nunca deixa o app quebrar
+        print("Erro ao buscar/criar profile:", e)
         return {
             "id": user_id,
             "email": email,
             "name": "",
             "phone": "",
-            "role": "barber"
+            "role": default_role
         }
 
 
-# ================= CLIENTES =================
-def listar_clientes():
+# ============================================================
+# ==================== CLIENTES ==============================
+# ============================================================
+
+def listar_clientes(barbeiro_id=None):
+    """Lista clientes do sistema (ou do barbeiro, no futuro)"""
     try:
-        res = (
-            supabase
-            .table("profiles")
+        query = (
+            supabase.table("profiles")
             .select("*")
             .eq("role", "client")
             .order("name", desc=False)
-            .execute()
         )
+
+        res = query.execute()
         return res.data or []
+
     except Exception as e:
-        print("Erro ao listar clientes:", e)
+        print("Erro listar clientes:", e)
         return []
 
 
 def criar_cliente(nome, telefone=None):
+    """Cria cliente manualmente"""
     try:
-        novo_cliente = {
+        novo = {
+            "id": str(uuid.uuid4()),
             "role": "client",
             "name": nome,
             "phone": telefone
         }
-        supabase.table("profiles").insert(novo_cliente).execute()
+        supabase.table("profiles").insert(novo).execute()
     except Exception as e:
-        print("Erro ao criar cliente:", e)
+        print("Erro criar cliente:", e)
 
 
-# ================= SERVIÇOS =================
+# ============================================================
+# ==================== SERVIÇOS ==============================
+# ============================================================
+
 def listar_servicos(barbeiro_id):
     try:
         res = (
@@ -109,24 +137,30 @@ def listar_servicos(barbeiro_id):
         )
         return res.data or []
     except Exception as e:
-        print("Erro ao listar serviços:", e)
+        print("Erro listar serviços:", e)
         return []
 
 
 def criar_servico(barbeiro_id, nome, preco, duracao):
     try:
-        supabase.table("services").insert({
+        novo = {
+            "id": str(uuid.uuid4()),
             "barber_id": barbeiro_id,
             "name": nome,
             "price": preco,
             "duration_minutes": duracao
-        }).execute()
+        }
+        supabase.table("services").insert(novo).execute()
     except Exception as e:
-        print("Erro ao criar serviço:", e)
+        print("Erro criar serviço:", e)
 
 
-# ================= AGENDA =================
+# ============================================================
+# ==================== AGENDA ================================
+# ============================================================
+
 def listar_agendamentos(barbeiro_id):
+    """Lista agendamentos já com join do cliente e serviço"""
     try:
         res = (
             supabase
@@ -137,36 +171,43 @@ def listar_agendamentos(barbeiro_id):
                 service:services(name, duration_minutes, price)
             """)
             .eq("barber_id", barbeiro_id)
-            .order("appointment_time", desc=False)
+            .order("appointment_time")
             .execute()
         )
         return res.data or []
     except Exception as e:
-        print("Erro ao listar agendamentos:", e)
+        print("Erro listar agenda:", e)
         return []
 
 
 def criar_agendamento(barbeiro_id, client_id, service_id, data_hora):
     try:
-        supabase.table("appointments").insert({
-            "barber_id": barbeiro_id,
+        novo = {
+            "id": str(uuid.uuid4()),
+            "barber_id": barber_id,
             "client_id": client_id,
             "service_id": service_id,
             "appointment_time": data_hora
-        }).execute()
+        }
+        supabase.table("appointments").insert(novo).execute()
     except Exception as e:
-        print("Erro ao criar agendamento:", e)
+        print("Erro criar agendamento:", e)
 
 
-# ================= LEMBRETES =================
+# ============================================================
+# ==================== LEMBRETES =============================
+# ============================================================
+
 def criar_lembrete(appointment_id, canal="whatsapp"):
     try:
-        supabase.table("reminders").insert({
+        novo = {
+            "id": str(uuid.uuid4()),
             "appointment_id": appointment_id,
             "channel": canal
-        }).execute()
+        }
+        supabase.table("reminders").insert(novo).execute()
     except Exception as e:
-        print("Erro ao criar lembrete:", e)
+        print("Erro criar lembrete:", e)
 
 
 def listar_lembretes():
@@ -174,5 +215,5 @@ def listar_lembretes():
         res = supabase.table("reminders").select("*").execute()
         return res.data or []
     except Exception as e:
-        print("Erro ao listar lembretes:", e)
+        print("Erro listar lembretes:", e)
         return []
