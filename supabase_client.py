@@ -6,6 +6,7 @@ SUPABASE_KEY = "sb_publishable_dYoF_Sr-yBc8dyxZofXCaA_fjOofLaQ"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 # ================= AUTH =================
 def login_email(email, password):
     try:
@@ -22,9 +23,11 @@ def login_email(email, password):
 # ================= PROFILE =================
 def get_or_create_profile(user_id, email):
     """
-    Retorna o profile, criando automaticamente se não existir.
+    Garante que SEMPRE retorna um profile válido.
+    Nunca retorna None.
     """
     try:
+        # Buscar perfil
         res = (
             supabase
             .table("profiles")
@@ -33,24 +36,35 @@ def get_or_create_profile(user_id, email):
             .execute()
         )
 
-        # Se não existe → cria
-        if not res.data:
-            new_profile = {
-                "id": user_id,
-                "email": email,
-                "name": "",
-                "phone": "",
-                "role": "barber"  # padrão
-            }
+        # Já existe
+        if res.data:
+            return res.data[0]
 
-            supabase.table("profiles").insert(new_profile).execute()
-            return new_profile
+        # Criar perfil novo
+        new_profile = {
+            "id": user_id,
+            "email": email,
+            "name": "",
+            "phone": "",
+            "role": "barber"
+        }
 
-        return res.data[0]
+        insert_res = supabase.table("profiles").insert(new_profile).execute()
+
+        # Garantir retorno mesmo sem data (às vezes supabase não retorna)
+        return insert_res.data[0] if insert_res.data else new_profile
 
     except Exception as e:
-        print("Erro ao buscar profile:", e)
-        return None
+        print("Erro ao buscar ou criar profile:", e)
+
+        # Nunca deixa o app quebrar
+        return {
+            "id": user_id,
+            "email": email,
+            "name": "",
+            "phone": "",
+            "role": "barber"
+        }
 
 
 # ================= CLIENTES =================
