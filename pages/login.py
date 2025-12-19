@@ -1,5 +1,5 @@
 import streamlit as st
-from supabase_client import login_email, get_profile
+from supabase_client import login_email, get_or_create_profile
 
 st.title("Agendei Barber 💈")
 
@@ -11,16 +11,13 @@ if st.button("Entrar"):
         user = login_email(email, password)
 
         if user:
-            profile = get_profile(user.id)
-
-            if profile is None:
-                st.error("Seu usuário está cadastrado, mas não possui perfil configurado.")
-                st.stop()
+            profile = get_or_create_profile(user.id, user.email)
 
             st.session_state["user"] = user
             st.session_state["role"] = profile["role"]
-            st.success("Login realizado com sucesso")
-            st.switch_page("pages/Home.py")
+
+            st.success("Login realizado com sucesso!")
+            st.switch_page("pages/home.py")
 
         else:
             st.error("Credenciais inválidas")
