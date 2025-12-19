@@ -1,0 +1,36 @@
+/* Remove padding padrão */
+.block-container {
+    padding-top: 2rem;
+}
+
+/* Cards */
+.card {
+    background: #161B22;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+/* Títulos */
+.title {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* Sub */
+.subtitle {
+    color: #9CA3AF;
+}
+
+/* Botão premium */
+.stButton > button {
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: bold;
+}
+
+/* Inputs */
+input, textarea {
+    border-radius: 10px !important;
+}
