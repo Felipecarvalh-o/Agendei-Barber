@@ -1,7 +1,10 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 
-st.set_page_config(page_title="Agendei Barber 💈", layout="wide")
+st.set_page_config(
+    page_title="Agendei Barber 💈",
+    layout="wide"
+)
 
 background_url = "https://images.unsplash.com/photo-1598387993561-5bfd4f9dd1ce"
 
@@ -15,33 +18,31 @@ page_bg = f"""
 
 .overlay {{
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    inset: 0;
     background: rgba(0,0,0,0.55);
     z-index: -1;
 }}
+
 .card {{
     background: rgba(255,255,255,0.15);
     padding: 40px;
     border-radius: 20px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
     text-align: center;
 }}
-.btn {{
-    width: 100%;
-    padding: 14px;
-    border-radius: 50px;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
+
+button[kind="secondary"] {{
+    background: rgba(255,255,255,0.2) !important;
+    border: 1px solid rgba(255,255,255,0.6) !important;
+    color: white !important;
+    font-weight: bold;
+    border-radius: 50px !important;
 }}
-.btn-yellow {{
-    background: #F5C542;
-}}
-.btn-outline {{
-    background: transparent;
-    border: 2px solid white;
-    color: white;
+button[kind="primary"] {{
+    background: #F5C542 !important;
+    color: black !important;
+    font-weight: bold;
+    border-radius: 50px !important;
 }}
 </style>
 
@@ -55,13 +56,13 @@ _, col, _ = st.columns([1,2,1])
 with col:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("## 💈 Encontre seu Barber")
-    st.markdown("### Agende rapidamente e com praticidade")
+    st.markdown("Agendamentos rápidos e profissionais")
 
-    if st.button("Sou Barbeiro 🧔‍♂️", key="barber", use_container_width=True):
+    if st.button("Sou Barbeiro 🧔‍♂️", key="barber_btn"):
         st.session_state["role_choice"] = "barber"
         switch_page("login")
 
-    if st.button("Sou Cliente 🙋‍♂️", key="client", use_container_width=True):
+    if st.button("Sou Cliente 🙋‍♂️", key="client_btn"):
         st.session_state["role_choice"] = "client"
         switch_page("login")
 
