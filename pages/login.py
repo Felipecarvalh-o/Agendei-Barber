@@ -1,42 +1,41 @@
 import streamlit as st
-from supabase_client import login_email, get_or_create_profile
+from streamlit_extras.switch_page_button import switch_page
+from supabase_api import login_email, login_social
+from utils import save_user_session, load_profile
 
-st.set_page_config(page_title="Login • Agendei Barber", layout="centered")
+st.set_page_config(page_title="Login | Agendei Barber", layout="centered")
 
 st.title("🔐 Login")
 
-role_from_choice = st.session_state.get("role_choice", "client")
+role = st.session_state.get("role_choice", None)
+if not role:
+    st.warning("Escolha primeiro se você é Cliente ou Barbeiro.")
+    switch_page("Home")
+    st.stop()
 
 email = st.text_input("Email")
 password = st.text_input("Senha", type="password")
 
 if st.button("Entrar"):
-    try:
-        user = login_email(email, password)
+    user = login_email(email, password)
+    
+    if user:
+        save_user_session(user)
+        
+        # Carrega ou cria profile
+        profile = load_profile()
 
-        if user:
-            # cria ou busca perfil já usando a role escolhida
-            profile = get_or_create_profile(
-                user.id,
-                user.email,
-                default_role=role_from_choice
-            )
+        # Se for cliente -> dashboard cliente
+        if profile["role"] == "client":
+            switch_page("dashboard_client")
 
-            # salva sessão
-            st.session_state["user"] = user
-            st.session_state["role"] = profile.get("role", "client")
-
-            st.success("Login realizado com sucesso!")
-
-            # redireciona para página correta
-            if st.session_state["role"] == "barber":
-                st.switch_page("pages/home_barber.py")
-            else:
-                st.switch_page("pages/home_client.py")
-
+        # Se for barbeiro -> dashboard barbeiro
         else:
-            st.error("Credenciais inválidas")
+            switch_page("dashboard_barber")
+    else:
+        st.error("Email ou senha incorretos.")
 
-    except Exception as e:
-        st.error("Erro ao fazer login")
-        st.write(e)
+st.divider()
+st.write("Ou entre com:")
+if st.button("Entrar com Google"):
+    login_social("google")
