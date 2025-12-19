@@ -6,9 +6,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Agendei Barber 💈")
-
+# Redireciona automaticamente para o Login ou Home
 if "user" not in st.session_state:
-    st.warning("Faça login pelo menu lateral")
+    st.switch_page("pages/login.py")
 else:
-    st.success(f"Bem-vindo!")
+    st.switch_page("pages/home.py")
