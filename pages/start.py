@@ -56,10 +56,10 @@ with col:
 
     if st.button("Sou Barbeiro 🧔‍♂️"):
         st.session_state["role_choice"] = "barber"
-        st.switch_page("pages/login.py")
+        st.switch_page("login.py")
 
     if st.button("Sou Cliente 🙋‍♂️"):
         st.session_state["role_choice"] = "client"
-        st.switch_page("pages/login.py")
+        st.switch_page("login.py")
 
     st.markdown("</div>", unsafe_allow_html=True)
