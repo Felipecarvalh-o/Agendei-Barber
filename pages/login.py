@@ -13,8 +13,9 @@ if st.button("Entrar"):
         if user:
             profile = get_or_create_profile(user.id, user.email)
 
+            # Nunca quebra – agora sempre existe profile válido
             st.session_state["user"] = user
-            st.session_state["role"] = profile["role"]
+            st.session_state["role"] = profile.get("role", "barber")
 
             st.success("Login realizado com sucesso!")
             st.switch_page("pages/home.py")
