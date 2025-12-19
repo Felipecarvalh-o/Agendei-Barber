@@ -5,10 +5,10 @@ st.set_page_config(page_title="Login 💈")
 
 st.title("Entrar")
 
-# Se veio sem escolha → mandar voltar
+# Se o usuário abriu o login direto sem selecionar papel
 if "role_choice" not in st.session_state:
     st.warning("Escolha primeiro se você é Cliente ou Barbeiro.")
-    st.switch_page("start")
+    st.switch_page("start.py")
     st.stop()
 
 selected_role = st.session_state["role_choice"]
@@ -23,12 +23,16 @@ if st.button("Entrar"):
         st.error("Credenciais inválidas")
         st.stop()
 
-    profile = get_or_create_profile(user.id, email, default_role=selected_role)
+    profile = get_or_create_profile(
+        user.id,
+        email,
+        default_role=selected_role
+    )
 
     st.session_state["user"] = user
     st.session_state["role"] = profile["role"]
 
     if selected_role == "barber":
-        st.switch_page("pages/dashboard_barber.py")
+        st.switch_page("dashboard_barber.py")
     else:
-        st.switch_page("pages/dashboard_client.py")
+        st.switch_page("dashboard_client.py")
